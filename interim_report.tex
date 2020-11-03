@@ -10,12 +10,6 @@
 \usepackage{enumitem} % use enumerate
 \usepackage{float} % for [H] label in figures
 
-\usepackage{fancyhdr} % add header and footer
-\pagestyle{fancy}
-\fancyhf{}
-\rhead{\leftmark}
-\cfoot{\thepage}
-
 \graphicspath{{../img/}}
 
 \usepackage{geometry} % set margin
@@ -42,7 +36,7 @@ every listing line={\small\ttfamily\bfseries{SQL> }}}
 listing only,listing options={language={}, basicstyle=\small\ttfamily, breaklines=true,aboveskip=0pt, belowskip=0pt},
 every listing line={}}
 
-\title{Midterm Report}
+\title{Interim Report}
 \date{}
 \author{Shitong CHAI}
 
@@ -51,14 +45,385 @@ every listing line={}}
 \maketitle
 \tableofcontents
 
-\chapter {Something}
+\chapter {Problem Setting}
+
+    \section {Simulation with Gym and Mujoco}
+    Gym\cite{1606.01540} is an open source integrated toolkit for Reinforcement Learning developed by OpenAI and has been regarded as the standard toolkit for evaluating the performance of state of the art algorithms for reinforcement learning or robotics tasks. Mujoco\cite{Todorov_mujoco:a} is a famous commercial physics simulation engine which is widely used in reinforcement learning and robotics. For the robotics environments of gym, the default simulation engine is Mujoco. For the experiments in the following chapters, the Gym toolkit is used for its simplicity of interface and the convenience of reproducing algorithms and comparing with state of the art algorithms.
+
+    Gym has a Python interface and has already been included in Python Package Index. Gym requires GLFW to render, which is an open source library for OpenGL. It can be installed directly with pip, which is the package manager of Python. There are various built-in environments which are well-known basic tasks for developing and evaluating RL algorithms. For example, one classical control problem called Cart Pole is designed to train an agent which is able to balance a pole whose bottom is attached to a unactuated joint, by moving its joint horizontally. A competitive algorithm is supposed to be able to avoid the falling of the pole.
+
+    Mujoco is the abbreviation for Multi-Joint dynamics with Contact. This physics engine is aimed to simulate with complex joint movement, collision and inter-body contact. It integrates simulation of particle systems, constraint solvers, finite-difference integrators, convex optimizers etc. It is written in ANSI C and has a Python wrapper which is used in the experiment. For Gym toolkit, the \emph{FetchReach-v1} environment requires Mujoco as its simulator, so Mujoco and OpenGL were installed in the Ubuntu 20.04 system and environment variables are set up to make sure the correct dynamic link libraries, i.e. \emph{libGL.so} and Mujoco binary releases, are loaded.
+
+    One screenshot demonstrating the \emph{FetchReach-v1} environment has been shown in Figure \ref{fetchreach-v1}. One manipulator is placed before a table. For every episode, the manipulator is reset and a red point is randomly placed above the table. The manipulator is supposed to reach the place of the red point with its end effector within the limited time of the episode. For every time step in the episode, the manipulator is given the observation which indicates the position of its joints, the position of its end effector which is the achieved goal and the position of the red point which is the desired goal. The observation related to its joints is a 10-dimensional vector, and the Cartesian coordinates indicating the position of end effector or red point are 3-dimensional vectors. If the distance between the position of its end effector and the red point is within a threshold, a reward of value 0.0 is given to the manipulator, otherwise a reward of value -1.0 is given. The manipulator is allowed to take actions given the observed states and the rewards and the action is a 4-dimensional float vector, which means $a\in [-1,1]^4$.
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\textwidth]{fetchreach-v1.png}
+        \caption{Demonstration of FetchReach-v1 Environment.}
+        \label{fetchreach-v1}
+    \end{figure}
 
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.8\textwidth]{mujoco_lossmu.png}
-\caption{Loss of $\mu$}
+    \section {Simulation with Pyrobolearn and Pybullet}
+
+    Pyrobolearn\cite{delhaisse2019pyrobolearn} is a framework designed for training intelligent robots which is still under development. Fortunately, most of the functionalities that are crucial to this research are already stable enough. Some functionalities that are not implemented yet could be implemented by inheriting the existing classes.
+
+    Similar to Gym, Pyrobolearn also have a default physics engine. This physics engine, called Pybullet\cite{coumans2019}, is open source and provides almost all of the basic simulation functionalities. Pybullet is the Python wrapper of Bullet3 which is a physics SDK written in C++. It is real time to detect collision and accurate enough to simulate multi-physics phenomenons which could be used in artificial intelligence research. Although Pyrobolearn has the interface for Mujoco, the support is not stable yet and is deprecated.
+
+    With Pybullet as the simulator, Pyrobolearn could be used to simulate various cases of classical robotics and reinforcement learning problems. In practice, any physical world is attached with specific physics constants like gravity vector and friction, and is responsible for loading bodies and robots. A world is often provided with a simulator (Pybullet is used here), which provides a world camera for this world.
+
+    In the subsequent experiments, the Basic World is used as default, where the gravity vector is (0.0, 0.0, -9.81) in Cartesian system, lateral friction is 1.0, spinning friction is 0.0, rolling friction is 0.0, linear damping is 0.04 and angular damping is 0.04.
+
+    A screenshot of a rendered empty Basic World under world camera is shown in Figure \ref{basicworld}. In default, there is no body or robot loaded, only the ground and basic physical parameters are initialized.
+
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.8\textwidth]{basicworld.png}
+        \caption{Demonstration of an empty Basic World. }
+        \label{basicworld}
+    \end{figure}
+
+    \section {The manipulator robot}
+
+    Two different kinds of manipulators are used in the experiments. One for the Gym toolkit, another one for the Pyrobolearn framework.
+
+    For the Gym toolkit with Mujoco physics engine, a manipulator which shares the same parameters with the Fetch mobile manipulator in Fetch research platform is used as the default robot interacting with the environment\cite{Wise2016FetchF}. The arm of this Fetch mobile manipulator has 7 degree-of-freedom. In the \emph{FetchReach-v1} environment, only 4 of them are used. The position of the joints contributes to the final state vector of the environment. It has already been shown in the Figure \ref{fetchreach-v1}.
+
+    For the Pyrobolearn framework, a manipulator named WAM is used. The WAM manipulator, if equipped with finger end effectors, has 15-degree-of-freedom kinematics, which means the action space is very high-dimensional. A screenshot of the loaded WAM robot in the Basic World is shown in Figure \ref{wam}.
+    \begin{figure}
+        \centering
+        \includegraphics[height=0.5\textwidth]{wam.png}
+        \caption{Demonstration of a WAM robot in the Basic World. }
+        \label{wam}
+    \end{figure}
+    
+    \section {Goal conditioned learning}
+
+    All the experiments that follows have goal conditioned states, which means the agent has access to the currently achieved goal and the desired goal. Assuming that the desired goal denotes the position in a 3-dimensional Cartesian system, and the achieved goal denotes the position of the end effector of the robot, it is often the case that if these two positions are within a given threshold, the task is completed. 
+
+    Formally, a state in a state space, i.e. $s\in\mathcal S$, is a triplet consisted of 3 vectors, i.e. $s=(s_o, s_{ag}, s_{dg})$, where $s_o$ is the observed state, $s_{ag}$ is the achieved goal and $s_{dg}$ is the desired goal. A environmental reward function $reward: \mathcal S\to\mathbb R$ is defined by the environment which decides the quantity of reward that an agent could receive.
+
+    Goal conditioned learning is much harder than ordinary reinforcement learning because the policy is supposed to take different strategies with different goals, as will be shown in the following experiments, a simple task of taking actions to touch a box with conditioned target box position takes extremely long time to train, even equipped with the latest algorithms designed for this kind of tasks.
+
+    Encountered with high-dimensional action and state spaces, and with a possibly moving goal, the exploration strategies of the agent should be efficient enough to have a decent performance. So meta-learning strategies are tried and intrinsic rewards for exploring are added to normal reinforcement learning algorithms.
+    
+    \section {Episodic learning}
+    
+    The learning of the agent in the experiments is organized by separated episodes. Each episode has the same amount of maximum time steps. The agent is supposed to perform a specific task within this time limit and get as high as possible reward. For the \emph{FetchReach-v1} environment, the maximum time step is 50. For the customized environment under the Pyrobolearn framework, this maximum time step is 100. The agent is allowed to store the transitions $(s_t, a_t, r_t, s_{t+1})$ in its replay buffer and utilize its previous knowledge to modify its policy. 
+
+    For every episode, the next state $s_{T+1}$, where $T$ is the maximum time step, should not be used for training because this state is not counted in this episode and doesn't trigger any future reward. This is implemented by introducing a mask in the Markov Decision Process, which gives 0 weight for the last state of the last transition in an episode, and 1 weight otherwise.
+
+    Random initialization is also introduced to each episode of the experiments. For the experiment in the \emph{FetchReach-v1} environment, before the first time step, the position of the joints on the Fetch model manipulator is reset to the same position and the desired position of the red point is randomly initialized to be above the table. For the experiment in the customized Pyrobolearn environment, the position of the joints on the WAM manipulator and the position of the desired box are both randomly initialized. The joint states are initialized by a uniform distribution between -1 and 1. The position of the box in the x-y plane is initialized by a uniform distribution between -1 and 1, and the z coordinated of the box is initialized to 0.5. Compared with the case in \emph{FetchReach-v1} environment, initializing the position of joints on the robot will introducing more complexity. Sometimes the WAM manipulator is randomly initialized to a bad state, and it is possible that the task of reaching the box is theoretically impossible because they are too far away. And it is also what was found in the corresponding experiment that it is much harder to train an agent in the customized environment.
+    
+    \section {The available states}
+
+    For the customized environment designed in Pyrobolearn framework. There are 3 types of states used for making up the final state vector: link world velocity state, link world position state, and position state of bodies.
+
+    For every world in Pyrobolearn, the objects and robots in it are called bodies. Every body has a unique body ID, which is used to get the corresponding states. The elements on the robot, however, are called links. Each of them also has a unique link ID, which is only accessible by the robot and not accessible from the world. The states of links should be initialized with link IDs and using body IDs to initialize link states or using link IDs to initialize body states will cause serious confusion and hidden bug.
+
+    In the experiment, the end effectors of the WAM manipulator are collected by its \emph{get\_end\_effector\_ids} method, and the last ID indicating one finger of the manipulator is selected. The link world position state of a link on the robot is a 3-dimensional vector and the link world velocity state of a link is a 6-dimensional vector. The link world position state of the selected end effector is used as the achieved goal. Despite the selected end effector, there are 20 other links on the WAM manipulator. Every link has a 3-dimensional world position state and a 6-dimensional world velocity state. Finally, the body position state of the desired box which should be touch by the manipulator is a 3-dimensional desired goal vector. The resulting state is a 192-dimensional vector.
+
+    There are also other states which are defined by the corresponding Universal Robotic Description Format document. If a sensor is defined in the source file, then the sensor data is available for the robot to make up the state vector. There are also states for joints on the robot, but they are not added because the state vector already contains enough information for guiding the manipulator to its desired goal.
+    
+    \section {The high-dimensional actions}
+
+    Only the joint position change action is used for specifying the action of the manipulator to take in the environment. After an action is taken, the joint positions will be added to the joint position changes in the action. This is a 15-dimensional vector, which makes it much harder for the agent to control.
+
+    All the states and actions in the experiments are continuous, when incorporated with high-dimensionality, this means a enormous search space. To help the agent find patterns in this high-dimensional state or action space, meta-learning methods should be introduced and meta-policies should be considered. In the following experiments, several ideas of exploring strategies are combined in the hope that they could help the agent explore faster in the world without environmental reward and achieve better performance later on the specified tasks.
+    
+\chapter {Episodic Hindsight Experience Replay with Mujoco}
+    \section{TD3 algorithm}
+    In all of the experiments that follows, TD3 algorithm\cite{DBLP:journals/corr/abs-1802-09477} was used to optimize the policy with twin delayed critic networks. The diagram explaining how the algorithm works is shown in Figure \ref{td3}, where $s_t\in\mathcal S, a_t\in\mathcal A$ are state in state space and action in action space respectively, $\mu:\mathcal S\to \mathcal A$ is the actor network, $Q_1:\mathcal S\times \mathcal A\to \mathbb R$ and $Q_2:\mathcal S\times \mathcal A\to \mathbb R$ are twin critic networks. The \emph{env} denotes the environment which determines the next state $s_{t+1}\in\mathcal S$ and the reward value $r_t\in \mathbb R$. For every sample of the transition $(s_t,a_t,r_t,s_{t+1}$, a loss could be computed to perform back propagation on the actor and critic networks. Based on the Bellman equation, the value $||r_t + \gamma Q(s_{t+1}, a_{t+1}) - Q(s_t, a_t)||$ should be minimized, and according to TD3 algorithm, the twin critic networks should pessimistic on the future $Q$ values, so a minimum value is taken for the second term. 
+
+    In TD3, the loss function of critic $Q_i, i\in\{1,2\}$ is 
+    $$\mathcal L_{Q_i} (s_t, a_t, r_t, s_{t+1}) = ||r_t + \gamma \min(Q'_1( s_{t+1}, \mu'(s_{t+1})), Q'_2( s_{t+1}, \mu'(s_{t+1}))) - Q_i(s_t, a_t)||.$$ 
+
+    The actor network should prefer actions with greater $Q$ values, so by taking the negative value of $Q$, we have the loss of the actor. In TD3, only the critic $Q_1$ is used for computing the loss of actor $\mu$:
+    $$\mathcal L_{\mu} (s_t) = -Q_1(s_t, \mu(s_t))$$
+
+    To stabilize the training process, target networks are introduced. $\mu',Q'_1,Q'_2$ in the formula of loss function are target networks of $\mu, Q_1, Q_2$ respectively. As indicated by the Figure \ref{td3}, the weights of target networks are not updated by back propagation but by copying from the corresponding original network. This replacement process of weights is delayed and sometimes polyak averaging technique is used to make the update smooth and increase the stability of training. The averaging coefficient $\tau$ is used as a hyper parameter and the formula for updating the weights of target networks is
+
+    $$W' \gets \tau W + (1-\tau) W',$$
+
+    where $W$ is the weight of the original network and $W'$ is the weight of the target network.
+
+\begin{figure}
+    \centering
+ \resizebox{250pt}{200pt}{
+
+\tikzset{every picture/.style={line width=0.75pt}} %set default line width to 0.75pt        
+
+\begin{tikzpicture}[x=0.75pt,y=0.75pt,yscale=-1,xscale=1]
+%uncomment if require: \path (0,405); %set diagram left start at 0, and has height of 405
+
+%Shape: Rectangle [id:dp2962115907882844] 
+\draw   (275,56) -- (345,56) -- (345,96) -- (275,96) -- cycle ;
+%Straight Lines [id:da8970487875880258] 
+\draw    (312.5,95) -- (312.5,123) ;
+\draw [shift={(312.5,125)}, rotate = 270] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Straight Lines [id:da07336723838033488] 
+\draw    (309.5,29) -- (309.5,57) ;
+\draw [shift={(309.5,59)}, rotate = 270] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Straight Lines [id:da5238760569280861] 
+\draw    (312.5,146) -- (312.5,174) ;
+\draw [shift={(312.5,176)}, rotate = 270] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Shape: Rectangle [id:dp7478124804474928] 
+\draw   (279,176) -- (349,176) -- (349,216) -- (279,216) -- cycle ;
+%Straight Lines [id:da43910978435994896] 
+\draw    (314.5,216) -- (314.5,244) ;
+\draw [shift={(314.5,246)}, rotate = 270] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Straight Lines [id:da6960008274015421] 
+\draw    (317.5,274) -- (317.5,302) ;
+\draw [shift={(317.5,304)}, rotate = 270] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Shape: Rectangle [id:dp5581540108021202] 
+\draw   (284,305) -- (354,305) -- (354,345) -- (284,345) -- cycle ;
+%Straight Lines [id:da4290744865227123] 
+\draw    (321.5,344) -- (321.5,372) ;
+\draw [shift={(321.5,374)}, rotate = 270] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Shape: Rectangle [id:dp2786127084979565] 
+\draw   (107,304) -- (177,304) -- (177,344) -- (107,344) -- cycle ;
+%Straight Lines [id:da5836443979012298] 
+\draw    (311,385) -- (146.95,346.46) ;
+\draw [shift={(145,346)}, rotate = 373.22] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Straight Lines [id:da6823292049923845] 
+\draw    (304.5,264) -- (179.81,322.15) ;
+\draw [shift={(178,323)}, rotate = 335] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Straight Lines [id:da43787406893966463] 
+\draw    (278,195) -- (243,194.05) ;
+\draw [shift={(241,194)}, rotate = 361.55] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Shape: Rectangle [id:dp6129965468873033] 
+\draw   (105,180) -- (175,180) -- (175,220) -- (105,220) -- cycle ;
+%Straight Lines [id:da5892343793332742] 
+\draw    (218,194) -- (177,194) ;
+\draw [shift={(175,194)}, rotate = 360] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Straight Lines [id:da8111964070333684] 
+\draw    (122,304) -- (121.06,275) ;
+\draw [shift={(121,273)}, rotate = 448.15] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Straight Lines [id:da8984997715282169] 
+\draw    (120,249) -- (119.07,223) ;
+\draw [shift={(119,221)}, rotate = 447.95] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Straight Lines [id:da9627849178597299] 
+\draw    (119,177) -- (118.07,151) ;
+\draw [shift={(118,149)}, rotate = 447.95] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Straight Lines [id:da6612408460035683] 
+\draw    (119,124) -- (272.09,75.6) ;
+\draw [shift={(274,75)}, rotate = 522.46] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Straight Lines [id:da06783918668937894] 
+\draw    (100,201) -- (75,201) ;
+\draw [shift={(73,201)}, rotate = 360] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Straight Lines [id:da07362934534222443] 
+\draw    (346,65) -- (385,65) ;
+\draw [shift={(387,65)}, rotate = 180] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Curve Lines [id:da5826429690023063] 
+\draw  [dash pattern={on 4.5pt off 4.5pt}]  (345,96) .. controls (385,66) and (504,268) .. (351,311) ;
+\draw [shift={(351,311)}, rotate = 344.3] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+%Straight Lines [id:da8225159600191189] 
+\draw  [dash pattern={on 4.5pt off 4.5pt}]  (158,220) -- (159.95,300) ;
+\draw [shift={(160,302)}, rotate = 268.6] [color={rgb, 255:red, 0; green, 0; blue, 0 }  ][line width=0.75]    (10.93,-3.29) .. controls (6.95,-1.4) and (3.31,-0.3) .. (0,0) .. controls (3.31,0.3) and (6.95,1.4) .. (10.93,3.29)   ;
+
+
+% Text Node
+\draw (304,70) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle \mu $};
+% Text Node
+\draw (305,134) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle a_{t}$};
+% Text Node
+\draw (301,9) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle s_{t}$};
+% Text Node
+\draw (301,190) node [anchor=north west][inner sep=0.75pt]   [align=left] {env};
+% Text Node
+\draw (309,251) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle s_{t+1}$};
+% Text Node
+\draw (310,314) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle \mu '$};
+% Text Node
+\draw (315,380) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle a_{t+1}$};
+% Text Node
+\draw (113,314) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle Q_{1} ',Q_{2} '$};
+% Text Node
+\draw (220,190) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle r_{t}$};
+% Text Node
+\draw (113,190) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle Q_{1} ,Q_{2}$};
+% Text Node
+\draw (113,253) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle Q'$};
+% Text Node
+\draw (110,126) node [anchor=north west][inner sep=0.75pt]   [align=left] {$\displaystyle Q$};
+% Text Node
+\draw (32,192) node [anchor=north west][inner sep=0.75pt]   [align=left] {lossQ};
+% Text Node
+\draw (394,55) node [anchor=north west][inner sep=0.75pt]   [align=left] {loss$\displaystyle \mu $};
+% Text Node
+\draw (432,187) node [anchor=north west][inner sep=0.75pt]   [align=left] {replace};
+% Text Node
+\draw (158,246) node [anchor=north west][inner sep=0.75pt]   [align=left] {replace};
+
+\end{tikzpicture}
+}
+\caption{Diagram of the TD3 algorithm.}
+\label{td3}
 \end{figure}
+
+    \section{Hindsight Experience Replay Strategies}
+    Hindsight Experience Replay is an effective algorithm for dealing with goal conditioned tasks\cite{DBLP:journals/corr/AndrychowiczWRS17}. It has already been supported by many experimental facts that HER could improve the performance of sparse and multi-stage tasks significantly. The basic idea is to replace the desired goal with the achieved goal and recompute reward for the transitions sampled, which is also called replying. As defined previously, the state vector is consisted of observations of the environment, the desired goal and the achieved goal. If an agent fails in an episode in the sparse reward setting, normally there will be no helpful reward received to help the agent to improve. By replacing the desired goal with the achieved goal, and recomputing the reward, a positive reward is received, which will encourage the agent to improve.
+
+    There are three strategies proposed in the original paper: the future strategy will replay with the corresponding transitions in the same episode after the transitions sampled, episode strategy will replay randomly with the transitions in the same episode and random strategy will randomly sample from all of the transitions and perform replaying.
+    
+    \section{Trajectory strategy}
+
+    Different from all of the strategies in the above, a \emph{trajectory} strategy which replaces all the desired goals of the transitions in the same episode with the last achieved goal is proposed. 
+
+    Formally, trajectory strategy will do the following computation in the replay step of the HER algorithm:
+
+    $$ s_{dg}[1:T] = s_{ag}[-1]$$
+    $$ r[1:T] = reward(s_{dg}[1:T], s_{ag}[1:T])$$
+
+    The experiment is based on the \emph{FetchReach-v1} environment in Gym. TD3 algorithm is used and 3 fully connected layers are used for the actor network and the twin critic networks. Gaussian noise $\mathcal N(0,0.2^2)$ is added to the output of actor network and $\varepsilon$-greedy strategy is used ($\varepsilon=0.3$) to increase the robustness of the networks and avoid converging to local minimum. The maximum capacity of the memory is 5120. The discount ratio for the loss of critic networks is $\gamma=0.99$. Learning rate $\alpha=3\times 10^{-4}$, batch size is 8. The polyak smoothing coefficient for updating the target networks is $\tau=5\times 10^{-3}$. The training of actor network is delayed by 2 step to slow down the update of actor. And before using the trained actor to produce actions, $2.5\times 10^4$ time steps are used to sample actions randomly without any policy to collect data from the environment. Each epoch is consisted of 10 episodes and after the end of every epoch, statistics about the loss and environmental interactions were collected.
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{mujoco_lossmu.png}
+        \caption{Loss of $\mu$}
+            \label{mujocolossmu}
+        \end{figure}
+
+        As shown in Figure \ref{mujocolossmu}, the average loss per episode of the actor network increased in the first 60 epochs and decreased slowly with rebounds. 
+
+        The average losses of the twin critics are shown in Figure \ref{mujocolossq1} and \ref{mujocolossq2}. As indicated by the name, the twin critic networks have almost the same loss values. The losses of the twin critic networks have a similar shape with the loss of actor network, all of them increase rapidly at first and decrease slowly afterwards.
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{mujoco_lossq1.png}
+        \caption{Loss of $Q_1$}
+        \label{mujocolossq1} 
+        \end{figure}
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{mujoco_lossq2.png}
+        \caption{Loss of $Q_2$}
+        \label{mujocolossq2} 
+        \end{figure}
+
+        The average environmental reward per episode is shown in Figure \ref{mujocoreward}. As the training proceeds, the average reward values increase gradually and finally converge to a value around -5.
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{mujoco_reward.png}
+        \caption{Environmental reward}
+            \label{mujocoreward}
+        \end{figure}
+
+        The success rate per episode which is recomputed every 10 episodes is shown in Figure \ref{mujocosuc}. The success rate is computed by finding the proportion of episodes which end up in the desired goal to the number of episodes. Because the data is collected with only 10 episodes, the values are discrete numbers. As only the last time step counts, the curve of success rate is not exactly the same as average reward curve.
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{mujoco_suc_rate.png}
+        \caption{Success rate of goal}
+            \label{mujocosuc}
+        \end{figure}
+
+\chapter {Noise Rescaling Layer}
+
+    \section{Fixing scale of noise as a hyper-parameter}
+
+    Normally, to increase the robustness of the policy, a Gaussian noise with 0 as mean and a fixed hyper-parameter as the standard variance is added to the action given by the actor network. The resulting action is then clipped to avoid invalid actions. However, this approach requires a tremendous amount of work to adjust the hyper-parameter and find the best value. Since an agent in the customized environment already requires a lot of time to train, it is not ideal to introduce this hyper-parameter and take the time to tune it.
+
+    \section{Embedding learnable mixture of Gaussian noise}
+    
+    To avoid training with the scale of noise as a hyper-parameter, an embedded learnable mixture of Gaussian noise is introduced. This noise is embedded in the actor network by directly adding a fully-connected layer after randomly generated Gaussian noise vectors. The resulting rescaled noise vector is then added with the normal action vector given by the original actor network without noise. Formally, Gaussian noise vectors $X_{bs\times D_a}$ is sampled randomly according to a normal Gaussian distribution, where $bs$ is the batch size and $D_a$ is the dimension of action space. If we denote the classical deterministic action value given by the original action network by $f(s)$, where $s$ is the input state vector, then we have the resulting action with rescaled noise:
+
+    $$ \mu(s) = f(s) + W X + b, X_{ij}\sim\mathcal N(0,1),$$
+
+    where $W$ and $b$ are the parameters of the fully-connected layer and are updated automatically by back propagation.
+
+    To better illustrate the consequence of adding this rescaled noise layer, two experiments are carried out only with a fixed noise scale hyper-parameter and only with a rescaled noise layer. The experiments are based on the customized environment where a WAM manipulator and a box is loaded, the task for the agent is to move the finger on the manipulator within 0.5 meter's distance from the box. TD3 algorithms and future strategy of HER are used in both the experiments in hope of accelerating the training process. The batch size is 16. The target network is updated every 2 episodes with the polyak coefficient as 0.005. The update of actor network is delayed by 2 episodes. The $\varepsilon$-greedy strategy is used with $\varepsilon=0.3$. Statistics is recomputed every 50 episodes.
+    
+
+    The average loss per episode of the actor network $\mu$ with only the noise scale hyper-parameter and the average loss of of the actor network with a noise rescaling layer are shown in Figure \ref{fcn_lossmu}. The loss of actor network with rescaled noise increased to relatively lower value in the beginning but rebounded later. As the both of the losses converged to a high value, it is not clear which is superior with only the loss data because the losses are defined by Q values and the two different actor networks have different Q values for back propagation.
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{myenv_lossmu.png}
+        \caption{Loss of $\mu$}
+            \label{fcn_lossmu}
+        \end{figure}
+
+    The average losses per episode of the twin critic networks $Q_1$ and $Q_2$ are shown in Figure \ref{fcn_lossq1} and Figure \ref{fcn_lossq2}. The losses share a similar pattern to the loss of $\mu$. Since the losses didn't decrease in the end, the losses will not reflect the real performance difference caused by the noise rescaling layer. The loss values of critic networks are much more unstable than actor network because critic networks are updated every time step and not delayed.
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{myenv_lossq1.png}
+        \caption{Loss of $Q_1$}
+            \label{fcn_lossq1}
+        \end{figure}
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{myenv_lossq2.png}
+        \caption{Loss of $Q_2$}
+            \label{fcn_lossq2}
+        \end{figure}
+
+    The rewards of agents with and without noise rescaling layer in the actor network are shown in Figure \ref{fcn_reward}. As shown in the figure, the agent with noise rescaling layer converged to a slightly higher average reward than the other one.
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{myenv_reward.png}
+        \caption{Environmental reward}
+            \label{fcn_reward}
+        \end{figure}
+
+    The success rate curve shares a similar pattern with average reward curve, the resulting success rate of the agent with noise rescaling layer is slightly more successful.
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{myenv_suc_rate.png}
+        \caption{Success rate of goal}
+            \label{fcn_suc_rate}
+        \end{figure}
+
+
+\chapter {Intrinsic Curiosity with Locality Sensitive Hash and HER}
+
+    \section{SimHash}
+
+    \section{Intrinsic Curiosity with Counting after Hashing}
+
+    \section{Accelerating Intrinsic Curiosity with HER}
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{lsh_lossmu.png}
+        \caption{Loss of $\mu$}
+        \end{figure}
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{lsh_lossq1.png}
+        \caption{Loss of $Q_1$}
+        \end{figure}
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{lsh_lossq2.png}
+        \caption{Loss of $Q_2$}
+        \end{figure}
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{lsh_reward.png}
+        \caption{Environmental reward}
+        \end{figure}
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{lsh_in_reward.png}
+        \caption{Intrinsic reward}
+        \end{figure}
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\textwidth]{lsh_suc_rate.png}
+        \caption{Success rate of goal}
+        \end{figure}
+
+\chapter {Physical inference based curiosity}
 
 
 \bibliography{../report_bib}{}
