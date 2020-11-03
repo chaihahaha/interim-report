@@ -5,7 +5,7 @@
 \usepackage{listings} % for lst in color box
 \usepackage[most]{tcolorbox} % for messageshell colorbox
 \usepackage{algorithm} % depended by algpseudocode
-
+\usepackage{media9}
 \usepackage{hyperref} % add clickable link to tableofcontents
 \usepackage{enumitem} % use enumerate
 \usepackage{float} % for [H] label in figures
@@ -36,7 +36,7 @@ every listing line={\small\ttfamily\bfseries{SQL> }}}
 listing only,listing options={language={}, basicstyle=\small\ttfamily, breaklines=true,aboveskip=0pt, belowskip=0pt},
 every listing line={}}
 
-\title{Interim Report}
+\title{Physical Simulation and Reasoning based Task-Agnostic learning (Interim Report)}
 \date{}
 \author{Shitong CHAI}
 
@@ -64,6 +64,7 @@ every listing line={}}
 
 
     \section {Simulation with Pyrobolearn and Pybullet}
+    \label{customized_env}
 
     Pyrobolearn\cite{delhaisse2019pyrobolearn} is a framework designed for training intelligent robots which is still under development. Fortunately, most of the functionalities that are crucial to this research are already stable enough. Some functionalities that are not implemented yet could be implemented by inheriting the existing classes.
 
@@ -77,7 +78,7 @@ every listing line={}}
 
     \begin{figure}
         \centering
-        \includegraphics[width=0.8\textwidth]{basicworld.png}
+        \includegraphics[width=0.4\textwidth]{basicworld.png}
         \caption{Demonstration of an empty Basic World. }
         \label{basicworld}
     \end{figure}
@@ -102,9 +103,9 @@ every listing line={}}
 
     Formally, a state in a state space, i.e. $s\in\mathcal S$, is a triplet consisted of 3 vectors, i.e. $s=(s_o, s_{ag}, s_{dg})$, where $s_o$ is the observed state, $s_{ag}$ is the achieved goal and $s_{dg}$ is the desired goal. A environmental reward function $reward: \mathcal S\to\mathbb R$ is defined by the environment which decides the quantity of reward that an agent could receive.
 
-    Goal conditioned learning is much harder than ordinary reinforcement learning because the policy is supposed to take different strategies with different goals, as will be shown in the following experiments, a simple task of taking actions to touch a box with conditioned target box position takes extremely long time to train, even equipped with the latest algorithms designed for this kind of tasks.
+    Goal conditioned learning is much harder than ordinary reinforcement learning because the policy is supposed to take possibly different strategies with different goals, as shown in the following experiments, a simple task of taking actions to touch a box, where the box position is the goal, takes extremely long time to train, even equipped with the latest algorithms designed for this kind of tasks.
 
-    Encountered with high-dimensional action and state spaces, and with a possibly moving goal, the exploration strategies of the agent should be efficient enough to have a decent performance. So meta-learning strategies are tried and intrinsic rewards for exploring are added to normal reinforcement learning algorithms.
+    Encountered with high-dimensional action and state spaces, and with a possibly moving goal, the exploration strategies of the agent should be effective enough to accelerate the learning process. So meta-learning strategies are used and intrinsic rewards for exploring are tested with normal reinforcement learning algorithms.
     
     \section {Episodic learning}
     
@@ -278,7 +279,7 @@ every listing line={}}
 
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{mujoco_lossmu.png}
+        \includegraphics[width=0.6\textwidth]{mujoco_lossmu.png}
         \caption{Loss of $\mu$}
             \label{mujocolossmu}
         \end{figure}
@@ -289,14 +290,14 @@ every listing line={}}
 
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{mujoco_lossq1.png}
+        \includegraphics[width=0.6\textwidth]{mujoco_lossq1.png}
         \caption{Loss of $Q_1$}
         \label{mujocolossq1} 
         \end{figure}
 
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{mujoco_lossq2.png}
+        \includegraphics[width=0.6\textwidth]{mujoco_lossq2.png}
         \caption{Loss of $Q_2$}
         \label{mujocolossq2} 
         \end{figure}
@@ -305,7 +306,7 @@ every listing line={}}
 
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{mujoco_reward.png}
+        \includegraphics[width=0.6\textwidth]{mujoco_reward.png}
         \caption{Environmental reward}
             \label{mujocoreward}
         \end{figure}
@@ -314,7 +315,7 @@ every listing line={}}
 
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{mujoco_suc_rate.png}
+        \includegraphics[width=0.6\textwidth]{mujoco_suc_rate.png}
         \caption{Success rate of goal}
             \label{mujocosuc}
         \end{figure}
@@ -325,7 +326,7 @@ every listing line={}}
 
     Normally, to increase the robustness of the policy, a Gaussian noise with 0 as mean and a fixed hyper-parameter as the standard variance is added to the action given by the actor network. The resulting action is then clipped to avoid invalid actions. However, this approach requires a tremendous amount of work to adjust the hyper-parameter and find the best value. Since an agent in the customized environment already requires a lot of time to train, it is not ideal to introduce this hyper-parameter and take the time to tune it.
 
-    \section{Embedding learnable mixture of Gaussian noise}
+    \section{Embedded learnable mixture of Gaussian noise}
     
     To avoid training with the scale of noise as a hyper-parameter, an embedded learnable mixture of Gaussian noise is introduced. This noise is embedded in the actor network by directly adding a fully-connected layer after randomly generated Gaussian noise vectors. The resulting rescaled noise vector is then added with the normal action vector given by the original actor network without noise. Formally, Gaussian noise vectors $X_{bs\times D_a}$ is sampled randomly according to a normal Gaussian distribution, where $bs$ is the batch size and $D_a$ is the dimension of action space. If we denote the classical deterministic action value given by the original action network by $f(s)$, where $s$ is the input state vector, then we have the resulting action with rescaled noise:
 
@@ -333,14 +334,16 @@ every listing line={}}
 
     where $W$ and $b$ are the parameters of the fully-connected layer and are updated automatically by back propagation.
 
-    To better illustrate the consequence of adding this rescaled noise layer, two experiments are carried out only with a fixed noise scale hyper-parameter and only with a rescaled noise layer. The experiments are based on the customized environment where a WAM manipulator and a box is loaded, the task for the agent is to move the finger on the manipulator within 0.5 meter's distance from the box. TD3 algorithms and future strategy of HER are used in both the experiments in hope of accelerating the training process. The batch size is 16. The target network is updated every 2 episodes with the polyak coefficient as 0.005. The update of actor network is delayed by 2 episodes. The $\varepsilon$-greedy strategy is used with $\varepsilon=0.3$. Statistics is recomputed every 50 episodes.
+    To better illustrate the consequence of adding this noise rescaling layer, two experiments are carried out only with a fixed noise scale hyper-parameter and only with a noise rescaling layer. The experiments are based on the customized environment where a WAM manipulator and a box is loaded, the task for the agent is to move the finger on the manipulator within 0.5 meters' distance from the box. TD3 algorithms and future strategy of HER are used in both the experiments in hope of accelerating the training process. All the networks are consisted of 4 fully connected layers, except for the additional noise rescaling layer. The batch size is 16. The target network is updated every 2 episodes with the polyak coefficient as 0.005. The update of actor network is delayed by 2 episodes. The $\varepsilon$-greedy strategy is used with $\varepsilon=0.3$. Statistics is recomputed every 50 episodes.
     
 
     The average loss per episode of the actor network $\mu$ with only the noise scale hyper-parameter and the average loss of of the actor network with a noise rescaling layer are shown in Figure \ref{fcn_lossmu}. The loss of actor network with rescaled noise increased to relatively lower value in the beginning but rebounded later. As the both of the losses converged to a high value, it is not clear which is superior with only the loss data because the losses are defined by Q values and the two different actor networks have different Q values for back propagation.
 
+    This experiment was done in the customized environment designed in Pyrobolearn as described in section \ref{customized_env}. A WAM manipulator and box is randomly initialized. The agent is expected to control the joints of the manipulator to let the distance between a finger on the manipulator and the box within 0.5 meters.
+
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{myenv_lossmu.png}
+        \includegraphics[width=0.6\textwidth]{myenv_lossmu.png}
         \caption{Loss of $\mu$}
             \label{fcn_lossmu}
         \end{figure}
@@ -349,14 +352,14 @@ every listing line={}}
 
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{myenv_lossq1.png}
+        \includegraphics[width=0.6\textwidth]{myenv_lossq1.png}
         \caption{Loss of $Q_1$}
             \label{fcn_lossq1}
         \end{figure}
 
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{myenv_lossq2.png}
+        \includegraphics[width=0.6\textwidth]{myenv_lossq2.png}
         \caption{Loss of $Q_2$}
             \label{fcn_lossq2}
         \end{figure}
@@ -365,7 +368,7 @@ every listing line={}}
 
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{myenv_reward.png}
+        \includegraphics[width=0.6\textwidth]{myenv_reward.png}
         \caption{Environmental reward}
             \label{fcn_reward}
         \end{figure}
@@ -374,7 +377,7 @@ every listing line={}}
 
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{myenv_suc_rate.png}
+        \includegraphics[width=0.6\textwidth]{myenv_suc_rate.png}
         \caption{Success rate of goal}
             \label{fcn_suc_rate}
         \end{figure}
@@ -382,48 +385,138 @@ every listing line={}}
 
 \chapter {Intrinsic Curiosity with Locality Sensitive Hash and HER}
 
-    \section{SimHash}
-
     \section{Intrinsic Curiosity with Counting after Hashing}
+    
+    Count-based exploration is a common approach to train an agent to interact with the environment and tune its policy of taking actions. Usually, the states with higher counts are less preferred because there will be less new knowledge obtained by visiting such states. However, for continuous state and action spaces, normal count-based exploration is hard to implement. Counting after taking the Locality Sensitive Hash values of states or actions has been shown to be effective in exploration problems\cite{DBLP:journals/corr/TangHFSCDSTA16}. 
 
-    \section{Accelerating Intrinsic Curiosity with HER}
+    In this experiment, the SimHash\cite{Charikardept_similarityestimation} function is used for calculating hash values. The SimHash function is given by
+
+    $$\phi(s)=\mathrm{sgn}(As)\in\{-1,1\}^k$$
+
+    where $A\in \mathbb R^{k\times \mathrm{dim}(\mathcal S)}$ is a matrix initialized with normal Gaussian distribution and fixed during training. $k$ is a hyper-parameter related to the granularity of the discretization of the state space.
+
+    After having the hash values, a dictionary mapping every hash value to its number of appearance is updated which is then used to compute a intrinsic reward. The intrinsic reward is set to be a monotony decreasing function of the count of hash value, which means the agent is encouraged to visit less familiar states. This intrinsic reward, by encouraging the agent to explore the states that are less likely to occur, is designed to make the agent internalize an intrinsic curiosity.
+
+    \section{Intrinsic Curiosity and HER}
+
+    In this research, the agent is expected to make the most use of the feedback from the environment without an artificial reward. To fulfill this requirement, HER algorithm is used in corporate with the Counting after Hashing method. The basic idea is to divide the states into observations of the environment, the achieved goal and the desired goal. Since the box is randomly initialized in the beginning of every episode, it doesn't matter if the replaying process will change the predefined distribution of box position. So it is reasonable to replace the desired goal with the future achieved goal in the state vectors. 
+
+    Additionally, the starting 25000 time steps are used to let the agent explore according to the intrinsic reward only and learn a good initialization of actor network and critic networks. To avoid confusing the intrinsic-only reward with the mixed reward consisted of environmental reward and intrinsic reward, a meta replay buffer is introduced which is only used for the starting exploration and recomputing the new reward in the replaying process of HER, but with the intrinsic reward instead.
+
+    Same as the previous experiment setting, TD3 and HER algorithm is used, a noise rescaling layer is added to the actor network. The batch size is 8. The size of replay buffer is $5\times 10^3$. The update of actor network is delayed by 20 time steps. A Locality Sensitive Hash based intrinsic reward is used together with a meta replay buffer during the starting exploration process and the intrinsic reward is then used together with the environmental reward as feedback to the agent. The $k$ hyper-parameter for the SimHash function is 20. The coefficient $\beta$ for the intrinsic reward is $1\times 10^{-3}$. This experiment is also done in the customized environment.
+
+    The loss of actor network $\mu$ in this experiment setting is shown in Figure \ref{lsh_lossmu}. As compared with the methods without LSH and HER as intrinsic reward, the loss rises much slower and is much more unstable. It might be the consequence of inconsistent reward during the starting exploration process and during training with environmental reward. It could also be because of bad hyper-parameter values. 
+
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{lsh_lossmu.png}
+        \includegraphics[width=0.6\textwidth]{lsh_lossmu.png}
         \caption{Loss of $\mu$}
+            \label{lsh_lossmu}
         \end{figure}
+
+    The loss of the twin critic networks $Q_1$ and $Q_2$ are shown in Figure \ref{lsh_lossq1} and Figure \ref{lsh_lossq2}. They also rise slowly and have fluctuations. Just as usual, the shapes of the two loss curves are almost identical.
 
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{lsh_lossq1.png}
+        \includegraphics[width=0.6\textwidth]{lsh_lossq1.png}
         \caption{Loss of $Q_1$}
+            \label{lsh_lossq1}
         \end{figure}
 
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{lsh_lossq2.png}
+        \includegraphics[width=0.6\textwidth]{lsh_lossq2.png}
         \caption{Loss of $Q_2$}
+            \label{lsh_lossq2}
         \end{figure}
+
+    The average environmental reward per episode is shown in Figure \ref{lsh_reward}. The resulting average reward is not ideal enough and have significant fluctuations, it might be because that the number of epochs is not enough for converging.
 
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{lsh_reward.png}
+        \includegraphics[width=0.6\textwidth]{lsh_reward.png}
         \caption{Environmental reward}
+            \label{lsh_reward}
         \end{figure}
+
+    The intrinsic reward computed with the LSH method is shown in Figure \ref{lsh_in_reward}. The values are truncated because of the fixed precision formatting. The intrinsic reward decreases gradually with more epochs, which indicates that the available intrinsic rewards will decrease as more and more interesting states are visited.
 
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{lsh_in_reward.png}
+        \includegraphics[width=0.6\textwidth]{lsh_in_reward.png}
         \caption{Intrinsic reward}
+            \label{lsh_in_reward}
         \end{figure}
+
+    Same as the previous description of the success rate, it is computed only with the last transition and shares a similar pattern with the average environmental reward.
 
         \begin{figure}[H]
         \centering
-        \includegraphics[width=0.8\textwidth]{lsh_suc_rate.png}
+        \includegraphics[width=0.6\textwidth]{lsh_suc_rate.png}
         \caption{Success rate of goal}
         \end{figure}
 
 \chapter {Physical inference based curiosity}
+
+Physical inference is an ability which is common for human. And when an abnormality is found by a man, he will be curious about its inner workings and exploit further. The question is how to measure the extent of abnormality. As shown in previous studies, the prediction error of a forward dynamics prediction model could be used as an intrinsic reward\cite{4141061}. In this experiment, a physical prediction model $P:\mathcal S\times \mathcal A\to \mathcal S$ is introduced to predict the next state according to the current state and action. For a given transition $(s_t,a_t,s_{t+1})$ where $s_t$ is the state at time $t$, $a_t$ is the action taken at time $t$ and $s_{t+1}$ is the next state given by the environment, the prediction error $r^p_t = ||s_{t+1} - P(s_t, a_t)||^2$ is used as an intrinsic reward.
+
+An experiment integrating all of the previous ideas with the physical prediction model is done in the customized environment. TD3, HER, noise rescaling layer and LSH based intrinsic reward with the same hyper-parameters are used, the batch size is 8, the size of replay buffer is $5\times 10^3$, the time steps delayed for the actor is 20. The $k$ hyper-parameter for SimHash is 20. The coefficient for the LSH based reward is $\beta=1\times 10^{-3}$. The coefficient for the physical prediction based reward is $C_p=1\times 10^{-4}$.
+
+The loss of actor network $\mu$ is shown in Figure \ref{p_lossmu}. Different from the experiment where only LSH based reward is used, the loss here is much more stable and smooth. This indicates that the additional reward of physical prediction model could help smoothing the update of the actor network.
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.6\textwidth]{p_lossmu.png}
+        \caption{Loss of $\mu$}
+            \label{p_lossmu}
+        \end{figure}
+
+The losses of twin critic networks are shown in Figure \ref{p_lossq1} and \ref{p_lossq2}. The values are much larger that the losses in the previous experiment without physical prediction model. These diverging losses could be caused by bad hyper-parameters.
+
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.6\textwidth]{p_lossq1.png}
+        \caption{Loss of $Q_1$}
+            \label{p_lossq1}
+        \end{figure}
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.6\textwidth]{p_lossq2.png}
+        \caption{Loss of $Q_2$}
+            \label{p_lossq2}
+        \end{figure}
+
+The average environmental reward is shown in Figure \ref{p_reward}, where no discernible tendency of increasing could be found.
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.6\textwidth]{p_reward.png}
+        \caption{Environmental reward}
+            \label{p_reward}
+        \end{figure}
+
+The intrinsic reward is a mixed reward consisted of LSH based reward and physical prediction model based reward. Although a new kind of intrinsic reward is added, the average intrinsic reward still decrease rapidly as more states are visited. This indicates that as more states are visited and various actions are taken, the physical prediction model is more and more accurate and produces less intrinsic reward.
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.6\textwidth]{p_in_reward.png}
+        \caption{Intrinsic reward}
+            \label{p_in_reward}
+        \end{figure}
+
+The success rate with physical prediction reward is obviously lower than the previous one with only the LSH based reward. This degradation might be due to too many parameters, which makes the agent unstable and harder to find appropriate features for controlling.
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.6\textwidth]{p_suc_rate.png}
+        \caption{Success rate of goal}
+        \end{figure}
+
+
+Theoretically, given a physical prediction model and a actor network, the agent is capable of inferring all the possible physical states that can be reached from current state. Since there are errors in the physical prediction model and the actor model, the inferred trajectories could be further refined by interacting with the environment and an estimated feasibility could be computed. This feasibility information could guide the agent to perform physical reasoning and challenge harder problems automatically. This preliminary idea will be studied further and experiments will be carried out to see if it works.
+
 
 
 \bibliography{../report_bib}{}
